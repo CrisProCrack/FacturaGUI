@@ -11,7 +11,6 @@ def main(page: Page):
     page.theme_mode = ThemeMode.SYSTEM
 
     # Define themes for light and dark modes
-    # Define themes for light and dark modes
     page.theme = Theme(
         color_scheme_seed=Colors.PINK,
         color_scheme=ColorScheme(
@@ -40,7 +39,7 @@ def main(page: Page):
 
     # Navigation rail
     nav_rail = NavigationRail(
-        selected_index=0,
+        selected_index=2,
         label_type= NavigationRailLabelType.ALL,
         min_width=100,
         min_extended_width=400,
@@ -87,12 +86,14 @@ def main(page: Page):
     add_product_button = ElevatedButton(
         "Agregar Producto",
         icon=Icons.ADD,
+        color=Colors.GREEN,
         on_click=lambda e: print("Agregar Producto")
         )
     # Botón para limpiar productos
     clear_products_button = ElevatedButton(
         "Limpiar Productos",
         icon=Icons.CLEAR,
+        color=Colors.ERROR,
         on_click=lambda e: print("Limpiar Productos")
         )
     # Boton para generar reportes
