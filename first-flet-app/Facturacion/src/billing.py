@@ -110,37 +110,40 @@ def create_billing_view(page: Page):
         read_only=True
     )
 
-    content_area = Container(
-        content=Column(
-            controls=[
-                Text(
-                    "Facturación",
-                    theme_style=TextThemeStyle.HEADLINE_LARGE,
-                    weight=FontWeight.BOLD
-                ),
-                Divider(),            
-                client_details,
-                product_table,
-                Column(
-                    [
-                        observations_field,
-                        total_neto_field,
-                        iva_field,
-                        total_field
-                    ]
-                ),
-                Row(
+    return ListView(
+        controls=[
+            Container(
+                content=Column(
                     controls=[
-                        add_product_button,
-                        clear_products_button,
-                        generate_report_button
-                    ]
-                )
-            ],
-            expand=True,
-        ),
-        padding=20,
+                        Text(
+                            "Facturación",
+                            theme_style=TextThemeStyle.HEADLINE_LARGE,
+                            weight=FontWeight.BOLD
+                        ),
+                        Divider(),            
+                        client_details,
+                        product_table,
+                        Column(
+                            [
+                                observations_field,
+                                total_neto_field,
+                                iva_field,
+                                total_field
+                            ]
+                        ),
+                        Row(
+                            controls=[
+                                add_product_button,
+                                clear_products_button,
+                                generate_report_button
+                            ]
+                        )
+                    ],
+                ),
+                padding=20,
+            )
+        ],
         expand=True,
+        spacing=10,
+        padding=20,
     )
-
-    return content_area
