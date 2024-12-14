@@ -1,9 +1,66 @@
 import flet as ft
 from flet import *
+from db_config import DatabaseConnection
+import hashlib
 import billing
 import billing_visualitation
 import customers
 import products
+
+def hash_password(password):
+    return hashlib.sha256(password.encode()).hexdigest()
+
+def validate_login(username, password):
+    conn = DatabaseConnection.get_connection()
+    if conn:
+        try:
+            cursor = conn.cursor()
+            hashed_password = hash_password(password)
+            query = "SELECT * FROM usuarios WHERE usuario = %s AND contrasena = %s"
+            cursor.execute(query, (username, hashed_password))
+            result = cursor.fetchone()
+            return result is not None
+        except Exception as e:
+            print(f"Error during login: {e}")
+            return False
+        finally:
+            cursor.close()
+            conn.close()
+    return False
+
+def register_user(username, password, confirm_password, email, phone):
+    if not all([username, password, confirm_password, email, phone]):
+        return "Por favor complete todos los campos"
+
+    if password != confirm_password:
+        return "Las contraseñas no coinciden"
+
+    conn = DatabaseConnection.get_connection()
+    if conn:
+        try:
+            cursor = conn.cursor()
+            hashed_password = hash_password(password)
+            
+            # Verificar si el usuario ya existe
+            cursor.execute("SELECT * FROM usuarios WHERE usuario = %s", (username,))
+            if cursor.fetchone():
+                return "El usuario ya existe"
+
+            # Insertar nuevo usuario
+            query = """
+            INSERT INTO usuarios (usuario, contrasena, correo, telefono) 
+            VALUES (%s, %s, %s, %s)
+            """
+            cursor.execute(query, (username, hashed_password, email, phone))
+            conn.commit()
+            return "Registro exitoso"
+        except Exception as e:
+            print(f"Error during registration: {e}")
+            return "Error al registrar usuario"
+        finally:
+            cursor.close()
+            conn.close()
+    return "Error de conexión a la base de datos"
 
 def create_login_view(page: Page, on_login_success):
     def on_register_success():
@@ -11,9 +68,20 @@ def create_login_view(page: Page, on_login_success):
         page.add(create_login_view(page, on_login_success))
         page.update()
     def handle_login(e):
-        # Add login validation logic here
-        on_login_success()
-    
+        username = usuario.value
+        password = contraseña.value
+        
+        if not username or not password:
+            page.overlay.append(SnackBar(content=Text("Por favor complete todos los campos")))
+            page.update()
+            return
+        
+        if validate_login(username, password):
+            on_login_success()
+        else:
+            page.overlay.append(SnackBar(content=Text("Usuario o contraseña incorrectos")))
+        page.update()
+
     def go_to_register(e):
         page.controls.clear()
         page.add(create_register_view(page, on_register_success, on_login_success))
@@ -71,8 +139,17 @@ def create_login_view(page: Page, on_login_success):
 
 def create_register_view(page: Page, on_register_success, on_login_success):
     def handle_register(e):
-        # Add registration logic here
-        on_register_success()
+        username = usuario.value
+        password = contraseña.value
+        confirm_password = contraseña_validate.value
+        email = correo.value
+        phone = telefono.value
+
+        result = register_user(username, password, confirm_password, email, phone)
+        page.overlay.append(SnackBar(content=Text(result)))
+        if result == "Registro exitoso":
+            on_register_success()
+        page.update()
     
     def go_to_login(e):
         page.controls.clear()
