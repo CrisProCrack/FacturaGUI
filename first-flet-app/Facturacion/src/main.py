@@ -157,20 +157,77 @@ def create_login_view(page: Page, on_login_success):
     )
 
 def create_register_view(page: Page, on_register_success, on_login_success):
-    def handle_register(e):
-        username = usuario.value
-        password = contraseña.value
-        confirm_password = contraseña_validate.value
-        email = correo.value
-        phone = telefono.value
+    def validate_email(email):
+        import re
+        pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+        return re.match(pattern, email) is not None
 
-        result = register_user(username, password, confirm_password, email, phone)
-        
-        if result == "Registro exitoso":
-            show_dialog(page, "Éxito", "Usuario registrado exitosamente")
-            on_register_success()
+    def validate_phone(phone):
+        return phone.isdigit() and len(phone) >= 10
+
+    def on_username_change(e):
+        if len(usuario.value) < 4:
+            usuario.helper_text = "El usuario debe tener al menos 4 caracteres"
+            usuario.border_color = Colors.ERROR
         else:
-            show_dialog(page, "Error", result)
+            usuario.helper_text = "Usuario válido"
+            usuario.border_color = Colors.GREEN
+        page.update()
+
+    def on_password_change(e):
+        if len(contraseña.value) < 8:
+            contraseña.helper_text = "La contraseña debe tener al menos 8 caracteres"
+            contraseña.border_color = Colors.ERROR
+        else:
+            contraseña.helper_text = "Contraseña válida"
+            contraseña.border_color = Colors.GREEN
+        validate_passwords()
+        page.update()
+
+    def on_confirm_password_change(e):
+        validate_passwords()
+        page.update()
+
+    def validate_passwords():
+        if contraseña.value != contraseña_validate.value:
+            contraseña_validate.helper_text = "Las contraseñas no coinciden"
+            contraseña_validate.border_color = Colors.ERROR
+        else:
+            contraseña_validate.helper_text = "Las contraseñas coinciden"
+            contraseña_validate.border_color = Colors.GREEN
+
+    def on_email_change(e):
+        if not validate_email(correo.value):
+            correo.helper_text = "Formato de correo inválido"
+            correo.border_color = Colors.ERROR
+        else:
+            correo.helper_text = "Correo válido"
+            correo.border_color = Colors.GREEN
+        page.update()
+
+    def on_phone_change(e):
+        if not validate_phone(telefono.value):
+            telefono.helper_text = "Solo números (al menos 10 dígitos)"
+            telefono.border_color = Colors.ERROR
+        else:
+            telefono.helper_text = "Teléfono válido"
+            telefono.border_color = Colors.GREEN
+        page.update()
+
+    def handle_register(e):
+        if (len(usuario.value) >= 4 and
+            len(contraseña.value) >= 8 and
+            contraseña.value == contraseña_validate.value and
+            validate_email(correo.value) and
+            validate_phone(telefono.value)):
+            result = register_user(usuario.value, contraseña.value, 
+                                 contraseña_validate.value, correo.value, 
+                                 telefono.value)
+            if result == "Registro exitoso":
+                show_dialog(page, "Éxito", "Usuario registrado exitosamente")
+                on_register_success()
+            else:
+                show_dialog(page, "Error", result)
         page.update()
     
     def go_to_login(e):
@@ -182,45 +239,75 @@ def create_register_view(page: Page, on_register_success, on_login_success):
         "Registro de usuario", 
         theme_style=TextThemeStyle.HEADLINE_LARGE
     )
+    
     usuario = TextField(
-        label="Usuario", 
+        label="Usuario",
         width=300,
-        prefix_icon=Icons.PERSON
+        prefix_icon=Icons.PERSON,
+        helper_text="Mínimo 4 caracteres",
+        on_change=on_username_change,
+        border_color=Colors.PINK,
+        focused_border_color=Colors.PINK,
+        helper_style=TextStyle(size=12)
     )
+    
     contraseña = TextField(
-        label="Contraseña", 
-        password=True, 
-        can_reveal_password=True, 
+        label="Contraseña",
         width=300,
-        prefix_icon=Icons.LOCK
+        password=True,
+        can_reveal_password=True,
+        prefix_icon=Icons.LOCK,
+        helper_text="Mínimo 8 caracteres",
+        on_change=on_password_change,
+        border_color=Colors.PINK,
+        focused_border_color=Colors.PINK,
+        helper_style=TextStyle(size=12)
     )
+    
     contraseña_validate = TextField(
-        label="Confirmar Contraseña", 
-        password=True, 
-        can_reveal_password=True, 
+        label="Confirmar Contraseña",
         width=300,
-        prefix_icon=Icons.LOCK
+        password=True,
+        can_reveal_password=True,
+        prefix_icon=Icons.LOCK,
+        helper_text="Repita la contraseña",
+        on_change=on_confirm_password_change,
+        border_color=Colors.PINK,
+        focused_border_color=Colors.PINK,
+        helper_style=TextStyle(size=12)
     )
+    
     correo = TextField(
         label="Correo",
         width=300,
-        prefix_icon=Icons.EMAIL
+        prefix_icon=Icons.EMAIL,
+        helper_text="ejemplo@dominio.com",
+        on_change=on_email_change,
+        border_color=Colors.PINK,
+        focused_border_color=Colors.PINK,
+        helper_style=TextStyle(size=12)
     )
+    
     telefono = TextField(
         label="Teléfono",
         width=300,
-        prefix_icon=Icons.PHONE
+        prefix_icon=Icons.PHONE,
+        helper_text="Solo números (al menos 10 dígitos)",
+        on_change=on_phone_change,
+        border_color=Colors.PINK,
+        focused_border_color=Colors.PINK,
+        helper_style=TextStyle(size=12)
     )
+
     label_iniciar_sesion = TextButton(
-        text="¿Ya tienes una cuenta? Inicia sesión", 
-        style=ButtonStyle(
-            color={"": Colors.BLUE}
-        ),
+        text="¿Ya tienes una cuenta? Inicia sesión",
+        style=ButtonStyle(color={"": Colors.PINK_50}),
         on_click=go_to_login
     )
+
     registrar = FilledButton(
-        text="Registrarse", 
-        width=133, 
+        text="Registrarse",
+        width=300,
         height=40,
         on_click=handle_register
     )
@@ -243,9 +330,9 @@ def create_register_view(page: Page, on_register_success, on_login_success):
                     horizontal_alignment=CrossAxisAlignment.CENTER,
                     spacing=20,
                 ),
-                padding=20,
-                width=477,
-                height=572,
+                padding=30,
+                width=400,
+                # Height will adjust automatically based on content
                 alignment=alignment.center,
             ),
             elevation=2
