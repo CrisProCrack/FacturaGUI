@@ -62,40 +62,6 @@ def register_user(username, password, confirm_password, email, phone):
             conn.close()
     return "Error de conexión a la base de datos"
 
-def validate_user_email(username, email):
-    conn = DatabaseConnection.get_connection()
-    if conn:
-        try:
-            cursor = conn.cursor()
-            query = "SELECT * FROM usuarios WHERE usuario = %s AND correo = %s"
-            cursor.execute(query, (username, email))
-            return cursor.fetchone() is not None
-        except Exception as e:
-            print(f"Error validating user email: {e}")
-            return False
-        finally:
-            cursor.close()
-            conn.close()
-    return False
-
-def update_password(username, new_password):
-    conn = DatabaseConnection.get_connection()
-    if conn:
-        try:
-            cursor = conn.cursor()
-            hashed_password = hash_password(new_password)
-            query = "UPDATE usuarios SET contrasena = %s WHERE usuario = %s"
-            cursor.execute(query, (hashed_password, username))
-            conn.commit()
-            return True
-        except Exception as e:
-            print(f"Error updating password: {e}")
-            return False
-        finally:
-            cursor.close()
-            conn.close()
-    return False
-
 def show_dialog(page: Page, title: str, message: str):
     def close_dialog(e):
         dlg.open = False
@@ -120,7 +86,6 @@ def create_login_view(page: Page, on_login_success):
         page.controls.clear()
         page.add(create_login_view(page, on_login_success))
         page.update()
-
     def handle_login(e):
         username = usuario.value
         password = contraseña.value
@@ -134,20 +99,11 @@ def create_login_view(page: Page, on_login_success):
             on_login_success()
         else:
             show_dialog(page, "Error", "Usuario o contraseña incorrectos")
+        page.update()
 
     def go_to_register(e):
         page.controls.clear()
         page.add(create_register_view(page, on_register_success, on_login_success))
-        page.update()
-
-    def go_to_recovery(e):
-        page.controls.clear()
-        page.add(create_recovery_view(page, on_recovery_success))
-        page.update()
-
-    def on_recovery_success():
-        page.controls.clear()
-        page.add(create_login_view(page, on_login_success))
         page.update()
 
     headline = Text(
@@ -173,14 +129,9 @@ def create_login_view(page: Page, on_login_success):
         ),
         on_click=go_to_register
     )
-    recuperar_password = TextButton(
-        text="¿Olvidaste tu contraseña?",
-        style=ButtonStyle(color={"": Colors.PINK_50}),
-        on_click=go_to_recovery
-    )
     iniciar_sesion = FilledButton(
-        text="Iniciar Sesión",
-        width=300,  # Cambiado para que coincida con el ancho de los otros elementos
+        text="Iniciar Sesión", 
+        width=133, 
         height=40,
         on_click=handle_login
     )
@@ -189,14 +140,14 @@ def create_login_view(page: Page, on_login_success):
         content=Card(
             content=Container(
                 content=Column(
-                    [headline, usuario, contraseña, registrate, recuperar_password, iniciar_sesion],
+                    [headline, usuario, contraseña, registrate, iniciar_sesion],
                     alignment=MainAxisAlignment.CENTER,
                     horizontal_alignment=CrossAxisAlignment.CENTER,
                     spacing=20,
                 ),
                 padding=20,
-                width=400,  # Cambiado para ser consistente
-                height=None,  # Altura automática
+                width=477,
+                height=360,
                 alignment=alignment.center,
             ),
             elevation=2
@@ -390,94 +341,7 @@ def create_register_view(page: Page, on_register_success, on_login_success):
         expand=True
     )
 
-def create_recovery_view(page: Page, on_recovery_success):
-    def handle_recovery(e):
-        if not username.value or not email.value or not new_password.value or not confirm_password.value:
-            show_dialog(page, "Error", "Por favor complete todos los campos")
-            return
-        
-        if new_password.value != confirm_password.value:
-            show_dialog(page, "Error", "Las contraseñas no coinciden")
-            return
-
-        if validate_user_email(username.value, email.value):
-            if update_password(username.value, new_password.value):
-                show_dialog(page, "Éxito", "Contraseña actualizada correctamente")
-                page.controls.clear()  # Limpiar antes de cambiar vista
-                on_recovery_success()
-            else:
-                show_dialog(page, "Error", "Error al actualizar la contraseña")
-        else:
-            show_dialog(page, "Error", "Usuario o correo no coinciden")
-
-    def go_back(e):
-        page.controls.clear()  # Limpiar antes de cambiar vista
-        on_recovery_success()
-
-    headline = Text("Recuperar Contraseña", theme_style=TextThemeStyle.HEADLINE_LARGE)
-    
-    username = TextField(
-        label="Usuario",
-        width=300,
-        prefix_icon=Icons.PERSON,
-    )
-    
-    email = TextField(
-        label="Correo electrónico",
-        width=300,
-        prefix_icon=Icons.EMAIL,
-    )
-    
-    new_password = TextField(
-        label="Nueva contraseña",
-        width=300,
-        password=True,
-        can_reveal_password=True,
-        prefix_icon=Icons.LOCK,
-    )
-    
-    confirm_password = TextField(
-        label="Confirmar contraseña",
-        width=300,
-        password=True,
-        can_reveal_password=True,
-        prefix_icon=Icons.LOCK,
-    )
-
-    recuperar = FilledButton(
-        text="Cambiar Contraseña",
-        width=300,
-        on_click=handle_recovery
-    )
-
-    volver = TextButton(
-        text="Volver al inicio de sesión",
-        style=ButtonStyle(color={"": Colors.PINK_50}),
-        on_click=go_back
-    )
-
-    return Container(
-        content=Card(
-            content=Container(
-                content=Column(
-                    [headline, username, email, new_password, confirm_password, recuperar, volver],
-                    alignment=MainAxisAlignment.CENTER,
-                    horizontal_alignment=CrossAxisAlignment.CENTER,
-                    spacing=20,
-                ),
-                padding=30,
-                width=400,
-                alignment=alignment.center,
-            ),
-            elevation=2
-        ),
-        alignment=alignment.center,
-        expand=True
-    )
-
 def main(page: ft.Page):
-    page.clean()  # Limpiar la página al iniciar
-
     def show_main_app():
         page.controls.clear()
         
