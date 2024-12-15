@@ -62,12 +62,12 @@ def register_user(username, password, confirm_password, email, phone):
             conn.close()
     return "Error de conexión a la base de datos"
 
-def show_alert_dialog(page: Page, title: str, message: str):
+def show_dialog(page: Page, title: str, message: str):
     def close_dialog(e):
-        dialog.open = False
+        dlg.open = False
         page.update()
 
-    dialog = AlertDialog(
+    dlg = AlertDialog(
         modal=True,
         title=Text(title),
         content=Text(message),
@@ -77,8 +77,8 @@ def show_alert_dialog(page: Page, title: str, message: str):
         actions_alignment=MainAxisAlignment.END,
     )
     
-    page.dialog = dialog
-    dialog.open = True
+    page.overlay.append(dlg)
+    dlg.open = True
     page.update()
 
 def create_login_view(page: Page, on_login_success):
@@ -91,14 +91,14 @@ def create_login_view(page: Page, on_login_success):
         password = contraseña.value
         
         if not username or not password:
-            show_alert_dialog(page, "Error", "Por favor complete todos los campos")
+            show_dialog(page, "Error", "Por favor complete todos los campos")
             return
         
         if validate_login(username, password):
-            show_alert_dialog(page, "Éxito", "Inicio de sesión exitoso")
+            show_dialog(page, "Éxito", "Inicio de sesión exitoso")
             on_login_success()
         else:
-            show_alert_dialog(page, "Error", "Usuario o contraseña incorrectos")
+            show_dialog(page, "Error", "Usuario o contraseña incorrectos")
         page.update()
 
     def go_to_register(e):
@@ -167,10 +167,10 @@ def create_register_view(page: Page, on_register_success, on_login_success):
         result = register_user(username, password, confirm_password, email, phone)
         
         if result == "Registro exitoso":
-            show_alert_dialog(page, "Éxito", "Usuario registrado exitosamente")
+            show_dialog(page, "Éxito", "Usuario registrado exitosamente")
             on_register_success()
         else:
-            show_alert_dialog(page, "Error", result)
+            show_dialog(page, "Error", result)
         page.update()
     
     def go_to_login(e):
