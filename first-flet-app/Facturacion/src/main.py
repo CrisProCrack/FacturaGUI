@@ -62,6 +62,25 @@ def register_user(username, password, confirm_password, email, phone):
             conn.close()
     return "Error de conexión a la base de datos"
 
+def show_alert_dialog(page: Page, title: str, message: str):
+    def close_dialog(e):
+        dialog.open = False
+        page.update()
+
+    dialog = AlertDialog(
+        modal=True,
+        title=Text(title),
+        content=Text(message),
+        actions=[
+            TextButton("OK", on_click=close_dialog),
+        ],
+        actions_alignment=MainAxisAlignment.END,
+    )
+    
+    page.dialog = dialog
+    dialog.open = True
+    page.update()
+
 def create_login_view(page: Page, on_login_success):
     def on_register_success():
         page.controls.clear()
@@ -72,14 +91,14 @@ def create_login_view(page: Page, on_login_success):
         password = contraseña.value
         
         if not username or not password:
-            page.overlay.append(SnackBar(content=Text("Por favor complete todos los campos")))
-            page.update()
+            show_alert_dialog(page, "Error", "Por favor complete todos los campos")
             return
         
         if validate_login(username, password):
+            show_alert_dialog(page, "Éxito", "Inicio de sesión exitoso")
             on_login_success()
         else:
-            page.overlay.append(SnackBar(content=Text("Usuario o contraseña incorrectos")))
+            show_alert_dialog(page, "Error", "Usuario o contraseña incorrectos")
         page.update()
 
     def go_to_register(e):
@@ -146,9 +165,12 @@ def create_register_view(page: Page, on_register_success, on_login_success):
         phone = telefono.value
 
         result = register_user(username, password, confirm_password, email, phone)
-        page.overlay.append(SnackBar(content=Text(result)))
+        
         if result == "Registro exitoso":
+            show_alert_dialog(page, "Éxito", "Usuario registrado exitosamente")
             on_register_success()
+        else:
+            show_alert_dialog(page, "Error", result)
         page.update()
     
     def go_to_login(e):
