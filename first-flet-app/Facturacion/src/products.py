@@ -113,7 +113,7 @@ def create_products_view(page: Page):
                 TextButton("Guardar", on_click=lambda e: save_product(e, fields))
             ],
         )
-        page.dialog = dialog
+        page.overlay.append(dialog)
         dialog.open = True
         page.update()
 
@@ -135,7 +135,7 @@ def create_products_view(page: Page):
                 TextButton("Actualizar", on_click=lambda e: save_product(e, fields, edit_mode=True))
             ],
         )
-        page.dialog = dialog
+        page.overlay.append(dialog)
         dialog.open = True
         page.update()
 
@@ -153,7 +153,7 @@ def create_products_view(page: Page):
                 ),
             ],
         )
-        page.dialog = dialog
+        page.overlay.append(dialog)
         dialog.open = True
         page.update()
 
