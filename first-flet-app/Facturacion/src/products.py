@@ -45,13 +45,13 @@ def create_products_view(page: Page):
                         DataCell(
                             Row([
                                 IconButton(
-                                    icon=icons.EDIT,
+                                    icon=Icons.EDIT,  # Changed from icons.EDIT
                                     icon_color="blue",
                                     data=product,
                                     on_click=lambda e: open_edit_dialog(e, page)
                                 ),
                                 IconButton(
-                                    icon=icons.DELETE,
+                                    icon=Icons.DELETE,  # Changed from icons.DELETE
                                     icon_color="red",
                                     data=product[0],
                                     on_click=lambda e: open_delete_dialog(e, page)
@@ -80,13 +80,15 @@ def create_products_view(page: Page):
             page.dialog.open = False
             load_products()
             page.update()
-            page.show_snack_bar(
-                SnackBar(content=Text("Producto guardado exitosamente"))
-            )
+            snack = SnackBar(content=Text("Producto guardado exitosamente"))
+            page.snack_bar = snack
+            page.snack_bar.open = True
+            page.update()
         except Exception as ex:
-            page.show_snack_bar(
-                SnackBar(content=Text(f"Error: {str(ex)}"))
-            )
+            error_snack = SnackBar(content=Text(f"Error: {str(ex)}"))
+            page.snack_bar = error_snack
+            page.snack_bar.open = True
+            page.update()
 
     def open_add_product_dialog(e, page):
         fields = [
@@ -105,7 +107,7 @@ def create_products_view(page: Page):
                 TextButton("Guardar", on_click=lambda e: save_product(e, fields))
             ],
         )
-        page.dialog = dialog
+        page.overlay.append(dialog)
         dialog.open = True
         page.update()
 
@@ -127,7 +129,7 @@ def create_products_view(page: Page):
                 TextButton("Actualizar", on_click=lambda e: save_product(e, fields, edit_mode=True))
             ],
         )
-        page.dialog = dialog
+        page.overlay.append(dialog)
         dialog.open = True
         page.update()
 
@@ -145,7 +147,7 @@ def create_products_view(page: Page):
                 ),
             ],
         )
-        page.dialog = dialog
+        page.overlay.append(dialog)
         dialog.open = True
         page.update()
 
