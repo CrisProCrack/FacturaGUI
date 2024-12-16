@@ -537,7 +537,7 @@ def main(page: ft.Page):
                 NavigationRailDestination(
                     icon=Icons.DESCRIPTION,
                     selected_icon=Icons.DESCRIPTION,
-                    label="Ver Facturas",
+                    label="Reimpresión \n de facturas",
                 ),
                 NavigationRailDestination(
                     icon=Icons.LOGOUT,
