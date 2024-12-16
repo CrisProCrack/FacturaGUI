@@ -3,28 +3,60 @@ from flet import *
 from db_config import DatabaseConnection
 
 class Customer:
+    _instance = None
+    
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super(Customer, cls).__new__(cls)
+            cls._instance.observers = []
+            cls._instance.conn = DatabaseConnection.get_connection()
+            cls._instance.cursor = cls._instance.conn.cursor()
+        return cls._instance
+
     def __init__(self):
-        self.conn = DatabaseConnection.get_connection()
-        self.cursor = self.conn.cursor()
+        # El constructor no necesita hacer nada más
+        pass
+
+    def add_observer(self, callback):
+        self.observers.append(callback)
+
+    def notify_observers(self):
+        for callback in self.observers:
+            callback()
 
     def get_all_customers(self):
         self.cursor.execute("SELECT * FROM clientes")
         return self.cursor.fetchall()
 
     def add_customer(self, nombre, correo, telefono, direccion, comuna, ciudad, rfc):
-        sql = "INSERT INTO clientes (nombre, correo, telefono, direccion, comuna, ciudad, rfc) VALUES (%s, %s, %s, %s, %s, %s, %s)"
-        self.cursor.execute(sql, (nombre, correo, telefono, direccion, comuna, ciudad, rfc))
-        self.conn.commit()
+        try:
+            sql = "INSERT INTO clientes (nombre, correo, telefono, direccion, comuna, ciudad, rfc) VALUES (%s, %s, %s, %s, %s, %s, %s)"
+            self.cursor.execute(sql, (nombre, correo, telefono, direccion, comuna, ciudad, rfc))
+            self.conn.commit()
+            self.notify_observers()  # Notificar cambios
+        except Exception as e:
+            self.conn.rollback()
+            raise e
 
     def update_customer(self, id, nombre, correo, telefono, direccion, comuna, ciudad, rfc):
-        sql = "UPDATE clientes SET nombre=%s, correo=%s, telefono=%s, direccion=%s, comuna=%s, ciudad=%s, rfc=%s WHERE id=%s"
-        self.cursor.execute(sql, (nombre, correo, telefono, direccion, comuna, ciudad, rfc, id))
-        self.conn.commit()
+        try:
+            sql = "UPDATE clientes SET nombre=%s, correo=%s, telefono=%s, direccion=%s, comuna=%s, ciudad=%s, rfc=%s WHERE id=%s"
+            self.cursor.execute(sql, (nombre, correo, telefono, direccion, comuna, ciudad, rfc, id))
+            self.conn.commit()
+            self.notify_observers()  # Notificar cambios
+        except Exception as e:
+            self.conn.rollback()
+            raise e
 
     def delete_customer(self, id):
-        sql = "DELETE FROM clientes WHERE id=%s"
-        self.cursor.execute(sql, (id,))
-        self.conn.commit()
+        try:
+            sql = "DELETE FROM clientes WHERE id=%s"
+            self.cursor.execute(sql, (id,))
+            self.conn.commit()
+            self.notify_observers()  # Notificar cambios
+        except Exception as e:
+            self.conn.rollback()
+            raise e
 
 def create_customers_view(page: Page):
     customer_manager = Customer()
@@ -82,7 +114,7 @@ def create_customers_view(page: Page):
                 customer_manager.add_customer(nombre, correo, telefono, direccion, comuna, ciudad, rfc)
 
             dialog = page.dialog
-            if dialog:
+            if (dialog):
                 dialog.open = False
 
             load_customers()

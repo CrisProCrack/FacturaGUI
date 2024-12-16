@@ -67,13 +67,23 @@ def create_billing_view(page: Page):
     billing_manager = BillingManager()
     current_products = []
 
-    def load_customers():
+    # Obtener una instancia del administrador de clientes
+    from customers import Customer
+    customer_manager = Customer()
+    
+    def refresh_customers():
+        # Actualizar la conexión antes de obtener los datos
+        billing_manager.conn = DatabaseConnection.get_connection()
+        billing_manager.cursor = billing_manager.conn.cursor(dictionary=True)
         customers = billing_manager.get_all_customers()
         customer_dropdown.options = [
             dropdown.Option(key=str(client['id']), text=client['nombre'])
             for client in customers
         ]
         page.update()
+
+    # Registrar el observador para actualizar cuando haya cambios en clientes
+    customer_manager.add_observer(refresh_customers)
 
     def on_customer_change(e):
         if customer_dropdown.value:
@@ -99,7 +109,7 @@ def create_billing_view(page: Page):
 
     def refresh_data():
         # Función para actualizar todos los datos
-        load_customers()
+        refresh_customers()
         page.update()
 
     def add_product_to_table(e):
@@ -413,7 +423,8 @@ def create_billing_view(page: Page):
         read_only=True
     )
 
-    load_customers()
+    # Asegurarse de que el dropdown se actualice inicialmente
+    refresh_customers()
 
     return ListView(
         controls=[
