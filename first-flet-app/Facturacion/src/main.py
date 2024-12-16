@@ -498,11 +498,20 @@ def main(page: ft.Page):
         def change_nav(e):
             nonlocal current_view
             index = e.control.selected_index
-            if index == 4:  # If logout button is clicked
-                handle_logout(e)
+            if index == 4:  # Si se selecciona cerrar sesión
+                page.controls.clear()
+                page.add(create_login_view(page, show_main_app))
                 return
+            
             page.controls.pop()
             current_view = views[index]
+            
+            # Actualizar datos si se cambia a la vista de facturación
+            if index == 2:  # índice 2 corresponde a la vista de facturación
+                # Forzar actualización de datos
+                if hasattr(current_view, 'refresh_data'):
+                    current_view.refresh_data()
+            
             page.add(
                 Row(
                     controls=[nav_rail, VerticalDivider(width=1), current_view],

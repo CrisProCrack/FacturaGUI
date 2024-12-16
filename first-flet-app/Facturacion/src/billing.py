@@ -12,6 +12,9 @@ class BillingManager:
         self.cursor = self.conn.cursor(dictionary=True)
 
     def get_all_customers(self):
+        # Refrescar la conexión antes de obtener los datos
+        self.conn = DatabaseConnection.get_connection()
+        self.cursor = self.conn.cursor(dictionary=True)
         self.cursor.execute("SELECT * FROM clientes")
         return self.cursor.fetchall()
 
@@ -20,6 +23,9 @@ class BillingManager:
         return self.cursor.fetchone()
 
     def get_product_by_code(self, code):
+        # Refrescar la conexión antes de obtener los datos
+        self.conn = DatabaseConnection.get_connection()
+        self.cursor = self.conn.cursor(dictionary=True)
         self.cursor.execute("SELECT * FROM productos WHERE codigo = %s", (code,))
         return self.cursor.fetchone()
 
@@ -91,12 +97,22 @@ def create_billing_view(page: Page):
         total_field.value = f"${total:,.2f}"
         page.update()
 
+    def refresh_data():
+        # Función para actualizar todos los datos
+        load_customers()
+        page.update()
+
     def add_product_to_table(e):
         dialog = AlertDialog(
             title=Text("Agregar Producto"),
             content=Column([
-                TextField(label="Código", ref=lambda x: setattr(x, 'codigo', x)),
+                TextField(
+                    label="Código",
+                    on_change=lambda e: check_product_availability(e, e.control),
+                    ref=lambda x: setattr(x, 'codigo', x)
+                ),
                 TextField(label="Cantidad", ref=lambda x: setattr(x, 'cantidad', x)),
+                Text("", ref=lambda x: setattr(x, 'availability_text', x))
             ]),
             actions=[
                 TextButton("Cancelar", on_click=lambda e: close_dialog(e)),
@@ -106,6 +122,21 @@ def create_billing_view(page: Page):
         page.dialog = dialog
         dialog.open = True
         page.update()
+
+    def check_product_availability(e, codigo_field):
+        try:
+            if codigo_field.value:
+                product = billing_manager.get_product_by_code(codigo_field.value)
+                availability_text = page.dialog.content.controls[2]
+                if product:
+                    availability_text.value = f"Stock disponible: {product['cantidad']}"
+                    availability_text.color = "green"
+                else:
+                    availability_text.value = "Producto no encontrado"
+                    availability_text.color = "red"
+                page.update()
+        except Exception as ex:
+            print(f"Error checking availability: {str(ex)}")
 
     def save_product(e):
         try:
@@ -267,6 +298,14 @@ def create_billing_view(page: Page):
             page.show_snack_bar(SnackBar(content=Text("Factura generada exitosamente")))
         except Exception as ex:
             page.show_snack_bar(SnackBar(content=Text(f"Error al generar factura: {str(ex)}")))
+
+    def on_route_change(e):
+        # Actualizar datos cuando se regresa a la vista de facturación
+        if page.route == "/billing":
+            refresh_data()
+
+    # Agregar manejador de cambio de ruta
+    page.on_route_change = on_route_change
 
     # Customer dropdown
     customer_dropdown = Dropdown(
