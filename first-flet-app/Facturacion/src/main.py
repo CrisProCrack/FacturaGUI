@@ -490,9 +490,17 @@ def main(page: ft.Page):
         views = [products_view, customers_view, billing_view, billing_visualization_view]
         current_view = views[0]
 
+        def handle_logout(e):
+            page.controls.clear()
+            page.add(create_login_view(page, show_main_app))
+            page.update()
+
         def change_nav(e):
             nonlocal current_view
             index = e.control.selected_index
+            if index == 4:  # If logout button is clicked
+                handle_logout(e)
+                return
             page.controls.pop()
             current_view = views[index]
             page.add(
@@ -530,6 +538,11 @@ def main(page: ft.Page):
                     icon=Icons.DESCRIPTION,
                     selected_icon=Icons.DESCRIPTION,
                     label="Ver Facturas",
+                ),
+                NavigationRailDestination(
+                    icon=Icons.LOGOUT,
+                    selected_icon=Icons.LOGOUT,
+                    label="Cerrar Sesión",
                 ),
             ],
             on_change=change_nav,
