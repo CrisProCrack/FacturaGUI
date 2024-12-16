@@ -73,6 +73,10 @@ CREATE TABLE `facturas` (
   `total` decimal(10,2) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+-- Modificar la tabla facturas para incluir el número de folio
+ALTER TABLE `facturas` 
+  MODIFY COLUMN `id` int(11) NOT NULL AUTO_INCREMENT COMMENT 'Este campo sirve como número de folio';
+
 -- --------------------------------------------------------
 
 --

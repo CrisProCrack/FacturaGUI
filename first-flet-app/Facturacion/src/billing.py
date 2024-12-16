@@ -19,6 +19,44 @@ class BillingManager:
         self.cursor.execute("SELECT * FROM clientes WHERE id = %s", (id,))
         return self.cursor.fetchone()
 
+    def get_product_by_code(self, code):
+        self.cursor.execute("SELECT * FROM productos WHERE codigo = %s", (code,))
+        return self.cursor.fetchone()
+
+    def update_product_quantity(self, product_id, quantity):
+        self.cursor.execute("UPDATE productos SET cantidad = cantidad - %s WHERE id = %s", 
+                          (quantity, product_id))
+        self.conn.commit()
+
+    def create_invoice(self, customer_id, total, products):
+        try:
+            # Insert into facturas
+            self.cursor.execute(
+                "INSERT INTO facturas (fecha, cliente_id, total) VALUES (%s, %s, %s)",
+                (datetime.now().date(), customer_id, total)
+            )
+            factura_id = self.cursor.lastrowid
+
+            # Insert invoice details
+            for product in products:
+                self.cursor.execute(
+                    "INSERT INTO detalle_facturas (factura_id, producto_id, cantidad, precio_unitario, total) VALUES (%s, %s, %s, %s, %s)",
+                    (factura_id, product['id'], product['cantidad'], product['precio'], product['total'])
+                )
+                # Update product quantity
+                self.update_product_quantity(product['id'], product['cantidad'])
+
+            self.conn.commit()
+            return factura_id
+        except Exception as e:
+            self.conn.rollback()
+            raise e
+
+    def get_next_invoice_number(self):
+        self.cursor.execute("SELECT MAX(id) as last_id FROM facturas")
+        result = self.cursor.fetchone()
+        return (result['last_id'] or 0) + 1
+
 def create_billing_view(page: Page):
     billing_manager = BillingManager()
     current_products = []
@@ -59,8 +97,6 @@ def create_billing_view(page: Page):
             content=Column([
                 TextField(label="Código", ref=lambda x: setattr(x, 'codigo', x)),
                 TextField(label="Cantidad", ref=lambda x: setattr(x, 'cantidad', x)),
-                TextField(label="Descripción", ref=lambda x: setattr(x, 'descripcion', x)),
-                TextField(label="Precio Unitario", ref=lambda x: setattr(x, 'precio', x)),
             ]),
             actions=[
                 TextButton("Cancelar", on_click=lambda e: close_dialog(e)),
@@ -74,14 +110,27 @@ def create_billing_view(page: Page):
     def save_product(e):
         try:
             dialog = page.dialog
+            codigo = dialog.content.controls[0].value
             cantidad = float(dialog.content.controls[1].value)
-            precio = float(dialog.content.controls[3].value)
+
+            # Get product from database
+            product = billing_manager.get_product_by_code(codigo)
+            if not product:
+                page.show_snack_bar(SnackBar(content=Text("Producto no encontrado")))
+                return
+
+            if cantidad > product['cantidad']:
+                page.show_snack_bar(SnackBar(content=Text("Cantidad insuficiente en inventario")))
+                return
+
+            precio = float(product['precio'])
             total = cantidad * precio
             
             new_product = {
-                'codigo': dialog.content.controls[0].value,
+                'id': product['id'],
+                'codigo': codigo,
                 'cantidad': cantidad,
-                'descripcion': dialog.content.controls[2].value,
+                'descripcion': product['descripcion'],
                 'precio': precio,
                 'total': total
             }
@@ -102,9 +151,8 @@ def create_billing_view(page: Page):
             
             calculate_totals()
             close_dialog(e)
-        except ValueError:
-            # Handle invalid number input
-            pass
+        except ValueError as ex:
+            page.show_snack_bar(SnackBar(content=Text(f"Error: {str(ex)}")))
 
     def clear_products(e):
         current_products.clear()
@@ -122,13 +170,22 @@ def create_billing_view(page: Page):
             return
 
         try:
-            # Create PDF
-            pdf_path = "factura.pdf"
+            customer_id = int(customer_dropdown.value)
+            subtotal = sum(float(row['total']) for row in current_products)
+            iva = subtotal * 0.19
+            total = subtotal + iva
+
+            # Create invoice in database
+            invoice_id = billing_manager.create_invoice(customer_id, total, current_products)
+            
+            # Generate PDF
+            pdf_path = f"factura_{invoice_id}.pdf"
             c = canvas.Canvas(pdf_path, pagesize=letter)
             
             # Header
             c.setFont("Helvetica-Bold", 16)
             c.drawString(50, 750, "FACTURA")
+            c.drawString(450, 750, f"Folio: {invoice_id}")
             c.setFont("Helvetica", 12)
             c.drawString(50, 730, f"Fecha: {datetime.now().strftime('%Y-%m-%d')}")
             
@@ -160,14 +217,52 @@ def create_billing_view(page: Page):
             iva = subtotal * 0.19
             total = subtotal + iva
             
-            c.drawString(350, 200, f"Subtotal: ${subtotal:,.2f}")
-            c.drawString(350, 180, f"IVA (19%): ${iva:,.2f}")
-            c.drawString(350, 160, f"Total: ${total:,.2f}")
+            # Modificar la sección de totales para incluir observaciones
+            y_totals = 200
+            
+            # Agregar observaciones si existen
+            if observations_field.value:
+                c.setFont("Helvetica-Bold", 10)
+                c.drawString(50, y_totals + 40, "Observaciones:")
+                c.setFont("Helvetica", 10)
+                # Dividir las observaciones en líneas si son muy largas
+                obs_words = observations_field.value.split()
+                obs_lines = []
+                current_line = []
+                line_length = 0
+                
+                for word in obs_words:
+                    if line_length + len(word) + 1 <= 80:  # 80 caracteres por línea aprox.
+                        current_line.append(word)
+                        line_length += len(word) + 1
+                    else:
+                        obs_lines.append(' '.join(current_line))
+                        current_line = [word]
+                        line_length = len(word)
+                
+                if current_line:
+                    obs_lines.append(' '.join(current_line))
+                
+                # Dibujar cada línea de observaciones
+                for i, line in enumerate(obs_lines):
+                    c.drawString(50, y_totals + 20 - (i * 15), line)
+                
+                # Ajustar la posición de los totales
+                y_totals -= (len(obs_lines) * 15 + 20)
+
+            # Dibujar los totales
+            c.setFont("Helvetica", 12)
+            c.drawString(350, y_totals, f"Subtotal: ${subtotal:,.2f}")
+            c.drawString(350, y_totals - 20, f"IVA (19%): ${iva:,.2f}")
+            c.drawString(350, y_totals - 40, f"Total: ${total:,.2f}")
             
             c.save()
             
             # Open PDF
             os.startfile(pdf_path)
+            
+            # Clear products after successful invoice creation
+            clear_products(None)
             
             page.show_snack_bar(SnackBar(content=Text("Factura generada exitosamente")))
         except Exception as ex:
