@@ -45,13 +45,13 @@ def create_products_view(page: Page):
                         DataCell(
                             Row([
                                 IconButton(
-                                    icon=Icons.EDIT,  # Changed from icons.EDIT
+                                    icon=Icons.EDIT,
                                     icon_color="blue",
                                     data=product,
                                     on_click=lambda e: open_edit_dialog(e, page)
                                 ),
                                 IconButton(
-                                    icon=Icons.DELETE,  # Changed from icons.DELETE
+                                    icon=Icons.DELETE,
                                     icon_color="red",
                                     data=product[0],
                                     on_click=lambda e: open_delete_dialog(e, page)
@@ -77,17 +77,23 @@ def create_products_view(page: Page):
             else:
                 product_manager.add_product(codigo, nombre, descripcion, precio, cantidad)
 
-            page.dialog.open = False
+            dialog = page.dialog
+            if dialog:
+                dialog.open = False
+
             load_products()
             page.update()
+
+            # Usar el nuevo método para mostrar SnackBar
             snack = SnackBar(content=Text("Producto guardado exitosamente"))
-            page.snack_bar = snack
-            page.snack_bar.open = True
+            page.overlay.append(snack)
+            snack.open = True
             page.update()
         except Exception as ex:
+            # Usar el nuevo método para mostrar SnackBar de error
             error_snack = SnackBar(content=Text(f"Error: {str(ex)}"))
-            page.snack_bar = error_snack
-            page.snack_bar.open = True
+            page.overlay.append(error_snack)
+            error_snack.open = True
             page.update()
 
     def open_add_product_dialog(e, page):
@@ -107,7 +113,7 @@ def create_products_view(page: Page):
                 TextButton("Guardar", on_click=lambda e: save_product(e, fields))
             ],
         )
-        page.overlay.append(dialog)
+        page.dialog = dialog
         dialog.open = True
         page.update()
 
@@ -129,7 +135,7 @@ def create_products_view(page: Page):
                 TextButton("Actualizar", on_click=lambda e: save_product(e, fields, edit_mode=True))
             ],
         )
-        page.overlay.append(dialog)
+        page.dialog = dialog
         dialog.open = True
         page.update()
 
@@ -147,27 +153,36 @@ def create_products_view(page: Page):
                 ),
             ],
         )
-        page.overlay.append(dialog)
+        page.dialog = dialog
         dialog.open = True
         page.update()
 
     def delete_product(e, product_id):
         try:
             product_manager.delete_product(product_id)
-            page.dialog.open = False
+            dialog = page.dialog
+            if dialog:
+                dialog.open = False
             load_products()
             page.update()
-            page.show_snack_bar(
-                SnackBar(content=Text("Producto eliminado exitosamente"))
-            )
+
+            # Usar el nuevo método para mostrar SnackBar
+            snack = SnackBar(content=Text("Producto eliminado exitosamente"))
+            page.overlay.append(snack)
+            snack.open = True
+            page.update()
         except Exception as ex:
-            page.show_snack_bar(
-                SnackBar(content=Text(f"Error al eliminar: {str(ex)}"))
-            )
+            # Usar el nuevo método para mostrar SnackBar de error
+            error_snack = SnackBar(content=Text(f"Error al eliminar: {str(ex)}"))
+            page.overlay.append(error_snack)
+            error_snack.open = True
+            page.update()
 
     def close_dialog(e, page):
-        page.dialog.open = False
-        page.update()
+        dialog = page.dialog
+        if dialog:
+            dialog.open = False
+            page.update()
 
     products_table = DataTable(
         columns=[
