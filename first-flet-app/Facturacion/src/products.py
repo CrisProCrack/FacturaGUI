@@ -21,7 +21,16 @@ class Product:
         self.cursor.execute(sql, (codigo, nombre, descripcion, precio, cantidad, id))
         self.conn.commit()
 
+    def is_product_in_use(self, id):
+        """Verifica si el producto está siendo usado en alguna factura"""
+        sql = "SELECT COUNT(*) FROM detalle_facturas WHERE producto_id = %s"
+        self.cursor.execute(sql, (id,))
+        count = self.cursor.fetchone()[0]
+        return count > 0
+
     def delete_product(self, id):
+        if self.is_product_in_use(id):
+            raise Exception("No se puede eliminar el producto porque está siendo usado en una o más facturas")
         sql = "DELETE FROM productos WHERE id=%s"
         self.cursor.execute(sql, (id,))
         self.conn.commit()
@@ -166,14 +175,13 @@ def create_products_view(page: Page):
             load_products()
             page.update()
 
-            # Usar el nuevo método para mostrar SnackBar
             snack = SnackBar(content=Text("Producto eliminado exitosamente"))
             page.overlay.append(snack)
             snack.open = True
             page.update()
         except Exception as ex:
-            # Usar el nuevo método para mostrar SnackBar de error
-            error_snack = SnackBar(content=Text(f"Error al eliminar: {str(ex)}"))
+            error_message = str(ex) if "está siendo usado" in str(ex) else "Error al eliminar el producto"
+            error_snack = SnackBar(content=Text(error_message))
             page.overlay.append(error_snack)
             error_snack.open = True
             page.update()
