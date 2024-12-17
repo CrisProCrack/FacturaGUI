@@ -102,6 +102,12 @@ class BillingManager:
             return []
 
 def create_billing_view(page: Page):
+    # Agregar esta constante al inicio de la función
+    INVOICES_DIR = "facturas"
+    # Crear la carpeta si no existe
+    if not os.path.exists(INVOICES_DIR):
+        os.makedirs(INVOICES_DIR)
+    
     billing_manager = BillingManager()
     current_products = []
 
@@ -257,8 +263,8 @@ def create_billing_view(page: Page):
             # Create invoice in database
             invoice_id = billing_manager.create_invoice(customer_id, total, current_products)
             
-            # Generate PDF
-            pdf_path = f"factura_{invoice_id}.pdf"
+            # Generate PDF with new path
+            pdf_path = os.path.join(INVOICES_DIR, f"factura_{invoice_id}.pdf")
             c = canvas.Canvas(pdf_path, pagesize=letter)
             
             # Header

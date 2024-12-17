@@ -11,6 +11,12 @@ import os
 def create_billing_visualization_view(page: ft.Page):
     billing_manager = BillingManager()
     
+    # Agregar esta constante al inicio de la función
+    INVOICES_DIR = "facturas"
+    # Crear la carpeta si no existe
+    if not os.path.exists(INVOICES_DIR):
+        os.makedirs(INVOICES_DIR)
+    
     def select_invoice(invoice_id):
         page.show_snack_bar(SnackBar(content=Text(f"Factura {invoice_id} seleccionada")))
 
@@ -70,8 +76,8 @@ def create_billing_visualization_view(page: ft.Page):
             page.show_snack_bar(SnackBar(content=Text("Error al obtener los datos de la factura")))
             return
 
-        # Generate PDF
-        pdf_path = f"factura_{invoice_data}_reprint.pdf"
+        # Generate PDF with new path
+        pdf_path = os.path.join(INVOICES_DIR, f"factura_{invoice_data}_reprint.pdf")
         c = canvas.Canvas(pdf_path, pagesize=letter)
         
         # Header
