@@ -63,6 +63,44 @@ class BillingManager:
         result = self.cursor.fetchone()
         return (result['last_id'] or 0) + 1
 
+    def get_invoice_details(self, invoice_id):
+        try:
+            # Obtener información de la factura
+            self.cursor.execute("""
+                SELECT f.*, c.* 
+                FROM facturas f 
+                JOIN clientes c ON f.cliente_id = c.id 
+                WHERE f.id = %s
+            """, (invoice_id,))
+            invoice = self.cursor.fetchone()
+
+            # Obtener detalles de los productos
+            self.cursor.execute("""
+                SELECT df.*, p.codigo, p.descripcion 
+                FROM detalle_facturas df 
+                JOIN productos p ON df.producto_id = p.id 
+                WHERE df.factura_id = %s
+            """, (invoice_id,))
+            details = self.cursor.fetchall()
+
+            return invoice, details
+        except Exception as e:
+            print(f"Error getting invoice details: {e}")
+            return None, None
+
+    def get_all_invoices(self):
+        try:
+            self.cursor.execute("""
+                SELECT f.*, c.nombre as cliente_nombre 
+                FROM facturas f 
+                JOIN clientes c ON f.cliente_id = c.id 
+                ORDER BY f.fecha DESC
+            """)
+            return self.cursor.fetchall()
+        except Exception as e:
+            print(f"Error getting invoices: {e}")
+            return []
+
 def create_billing_view(page: Page):
     billing_manager = BillingManager()
     current_products = []
