@@ -101,6 +101,25 @@ class BillingManager:
             print(f"Error getting invoices: {e}")
             return []
 
+    def search_products(self, search_term):
+        """Busca productos que coincidan con el término de búsqueda en código o nombre"""
+        try:
+            # Refrescar la conexión
+            self.conn = DatabaseConnection.get_connection()
+            self.cursor = self.conn.cursor(dictionary=True)
+            
+            query = """
+                SELECT * FROM productos 
+                WHERE codigo LIKE %s OR nombre LIKE %s OR descripcion LIKE %s
+                LIMIT 10
+            """
+            search_pattern = f"%{search_term}%"
+            self.cursor.execute(query, (search_pattern, search_pattern, search_pattern))
+            return self.cursor.fetchall()
+        except Exception as e:
+            print(f"Error searching products: {e}")
+            return []
+
 def create_billing_view(page: Page):
     # Agregar esta constante al inicio de la función
     INVOICES_DIR = "facturas"
@@ -157,87 +176,118 @@ def create_billing_view(page: Page):
         page.update()
 
     def add_product_to_table(e):
+        search_results = []
+        selected_product = None
+
+        def on_search_change(e):
+            nonlocal search_results
+            if len(e.control.value) >= 2:  # Buscar solo si hay al menos 2 caracteres
+                search_results = billing_manager.search_products(e.control.value)
+                # Actualizar las sugerencias
+                search_suggestions.controls = [
+                    ListTile(
+                        title=Text(f"{product['codigo']} - {product['nombre']}"),
+                        subtitle=Text(f"Stock: {product['cantidad']} - Precio: ${product['precio']:,.2f}"),
+                        data=product,
+                        on_click=lambda e: select_product(e.control.data)
+                    )
+                    for product in search_results
+                ]
+                search_suggestions.visible = True
+            else:
+                search_suggestions.controls = []
+                search_suggestions.visible = False
+            dialog.content.update()
+
+        def select_product(product):
+            nonlocal selected_product
+            selected_product = product
+            search_field.value = f"{product['codigo']} - {product['nombre']}"
+            cantidad_field.value = "1"  # Valor por defecto
+            search_suggestions.visible = False
+            cantidad_field.visible = True
+            availability_text.value = f"Stock disponible: {product['cantidad']}"
+            availability_text.visible = True
+            dialog.content.update()
+
+        def save_selected_product(e):
+            if not selected_product:
+                page.show_snack_bar(SnackBar(content=Text("Por favor seleccione un producto")))
+                return
+
+            try:
+                cantidad = float(cantidad_field.value)
+                if cantidad > selected_product['cantidad']:
+                    page.show_snack_bar(SnackBar(content=Text("Cantidad insuficiente en inventario")))
+                    return
+
+                new_product = {
+                    'id': selected_product['id'],
+                    'codigo': selected_product['codigo'],
+                    'cantidad': cantidad,
+                    'descripcion': selected_product['descripcion'],
+                    'precio': float(selected_product['precio']),
+                    'total': cantidad * float(selected_product['precio'])
+                }
+
+                current_products.append(new_product)
+                product_table.rows.append(
+                    DataRow(
+                        cells=[
+                            DataCell(Text(new_product['codigo'])),
+                            DataCell(Text(str(new_product['cantidad']))),
+                            DataCell(Text(new_product['descripcion'])),
+                            DataCell(Text(f"${new_product['precio']:,.2f}")),
+                            DataCell(Text(f"${new_product['total']:,.2f}")),
+                        ]
+                    )
+                )
+
+                calculate_totals()
+                close_dialog(e)
+            except ValueError as ex:
+                page.show_snack_bar(SnackBar(content=Text(f"Error: {str(ex)}")))
+
+        search_field = TextField(
+            label="Buscar producto (código o nombre)",
+            on_change=on_search_change,
+            autofocus=True
+        )
+
+        search_suggestions = Column(
+            controls=[],
+            scroll=ScrollMode.AUTO,
+            visible=False,
+            height=200
+        )
+
+        cantidad_field = TextField(
+            label="Cantidad",
+            visible=False,
+            keyboard_type=KeyboardType.NUMBER
+        )
+
+        availability_text = Text(
+            "",
+            visible=False
+        )
+
         dialog = AlertDialog(
             title=Text("Agregar Producto"),
             content=Column([
-                TextField(
-                    label="Código",
-                    on_change=lambda e: check_product_availability(e, e.control),
-                    ref=lambda x: setattr(x, 'codigo', x)
-                ),
-                TextField(label="Cantidad", ref=lambda x: setattr(x, 'cantidad', x)),
-                Text("", ref=lambda x: setattr(x, 'availability_text', x))
+                search_field,
+                search_suggestions,
+                cantidad_field,
+                availability_text
             ]),
             actions=[
                 TextButton("Cancelar", on_click=lambda e: close_dialog(e)),
-                TextButton("Agregar", on_click=lambda e: save_product(e)),
+                TextButton("Agregar", on_click=save_selected_product),
             ],
         )
         page.dialog = dialog
         dialog.open = True
         page.update()
-
-    def check_product_availability(e, codigo_field):
-        try:
-            if codigo_field.value:
-                product = billing_manager.get_product_by_code(codigo_field.value)
-                availability_text = page.dialog.content.controls[2]
-                if product:
-                    availability_text.value = f"Stock disponible: {product['cantidad']}"
-                    availability_text.color = "green"
-                else:
-                    availability_text.value = "Producto no encontrado"
-                    availability_text.color = "red"
-                page.update()
-        except Exception as ex:
-            print(f"Error checking availability: {str(ex)}")
-
-    def save_product(e):
-        try:
-            dialog = page.dialog
-            codigo = dialog.content.controls[0].value
-            cantidad = float(dialog.content.controls[1].value)
-
-            # Get product from database
-            product = billing_manager.get_product_by_code(codigo)
-            if not product:
-                page.show_snack_bar(SnackBar(content=Text("Producto no encontrado")))
-                return
-
-            if cantidad > product['cantidad']:
-                page.show_snack_bar(SnackBar(content=Text("Cantidad insuficiente en inventario")))
-                return
-
-            precio = float(product['precio'])
-            total = cantidad * precio
-            
-            new_product = {
-                'id': product['id'],
-                'codigo': codigo,
-                'cantidad': cantidad,
-                'descripcion': product['descripcion'],
-                'precio': precio,
-                'total': total
-            }
-            
-            current_products.append(new_product)
-            
-            product_table.rows.append(
-                DataRow(
-                    cells=[
-                        DataCell(Text(new_product['codigo'])),
-                        DataCell(Text(str(new_product['cantidad']))),
-                        DataCell(Text(new_product['descripcion'])),
-                        DataCell(Text(f"${new_product['precio']:,.2f}")),
-                        DataCell(Text(f"${new_product['total']:,.2f}")),
-                    ]
-                )
-            )
-            
-            calculate_totals()
-            close_dialog(e)
-        except ValueError as ex:
-            page.show_snack_bar(SnackBar(content=Text(f"Error: {str(ex)}")))
 
     def clear_products(e):
         current_products.clear()
