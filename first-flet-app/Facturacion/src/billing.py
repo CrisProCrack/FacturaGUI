@@ -1,3 +1,40 @@
+"""
+Módulo de Facturación
+--------------------
+Sistema completo de facturación con generación de PDFs y gestión de inventario.
+
+Clase BillingManager:
+    Gestiona todas las operaciones de facturación.
+    
+    Métodos principales:
+    - get_all_customers(): Lista clientes disponibles
+    - get_customer_by_id(): Obtiene detalles de cliente
+    - get_product_by_code(): Busca productos
+    - update_product_quantity(): Actualiza inventario
+    - create_invoice(): Crea nueva factura
+    - get_invoice_details(): Obtiene detalles de factura
+    - search_products(): Búsqueda dinámica de productos
+
+Función create_billing_view:
+    Crea la interfaz de facturación.
+    
+    Características:
+    - Selección de cliente
+    - Búsqueda de productos
+    - Cálculo automático
+    - Validación de stock
+    - Generación de PDF
+    - Gestión de observaciones
+    
+Funcionalidades:
+    - Cálculo de IVA (19%)
+    - Actualización automática de inventario
+    - Validaciones en tiempo real
+    - Generación de facturas en PDF
+    - Sistema de observaciones
+    - Búsqueda inteligente de productos
+"""
+
 import flet as ft
 from flet import *
 from datetime import datetime

@@ -1,3 +1,36 @@
+"""
+Módulo de Gestión de Productos
+-----------------------------
+Implementa la funcionalidad completa para administrar productos en el sistema.
+
+Clase Product:
+    Maneja todas las operaciones CRUD de productos.
+    
+    Métodos principales:
+    - get_all_products(): Obtiene lista completa de productos
+    - add_product(): Agrega nuevo producto
+    - update_product(): Actualiza producto existente
+    - delete_product(): Elimina producto si no está en uso
+    - is_product_in_use(): Verifica si el producto está en facturas
+
+Función create_products_view:
+    Crea la interfaz gráfica para gestión de productos.
+    
+    Características:
+    - Tabla de productos con datos
+    - Botones de agregar, editar y eliminar
+    - Validaciones de datos
+    - Mensajes de confirmación
+    - Manejo de errores
+    - Actualización en tiempo real
+
+Validaciones implementadas:
+    - Stock no negativo
+    - Campos requeridos
+    - Productos en uso
+    - Formato de precios
+"""
+
 import flet as ft
 from flet import *
 from db_config import DatabaseConnection

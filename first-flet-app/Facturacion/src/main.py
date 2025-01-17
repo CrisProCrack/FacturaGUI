@@ -1,3 +1,42 @@
+"""
+Módulo Principal del Sistema
+--------------------------
+Controla la autenticación y navegación principal del sistema.
+
+Funciones principales:
+    - hash_password(): Encriptación de contraseñas
+    - validate_login(): Validación de credenciales
+    - register_user(): Registro de nuevos usuarios
+    - validate_user_email(): Validación de correos
+    - update_password(): Actualización de contraseñas
+    
+Vistas principales:
+    - create_login_view(): Vista de inicio de sesión
+    - create_register_view(): Registro de usuarios
+    - create_recovery_view(): Recuperación de contraseña
+    
+Características del sistema:
+    - Sistema de autenticación seguro
+    - Gestión de sesiones
+    - Navegación entre vistas
+    - Temas claro/oscuro
+    - Validaciones en tiempo real
+    - Mensajes de estado
+    
+Navegación principal:
+    - Productos
+    - Clientes
+    - Facturación
+    - Reimpresión
+    - Ayuda
+    - Cerrar Sesión
+
+Temas:
+    - Tema claro personalizado
+    - Tema oscuro personalizado
+    - Adaptación automática al sistema
+"""
+
 import flet as ft
 from flet import *
 from db_config import DatabaseConnection

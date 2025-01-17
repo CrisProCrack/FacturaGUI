@@ -1,3 +1,40 @@
+"""
+Módulo de Ayuda del Sistema
+--------------------------
+Proporciona documentación y guías de uso del sistema.
+
+Función create_help_view:
+    Crea la interfaz de ayuda con documentación detallada.
+    
+Secciones documentadas:
+    1. Facturación - Guía Detallada
+       - Proceso de creación de facturas
+       - Campos importantes
+       - Funciones adicionales
+       
+    2. Productos
+       - Gestión de inventario
+       - Operaciones CRUD
+       - Validaciones
+       
+    3. Clientes
+       - Administración de datos
+       - Campos disponibles
+       - Operaciones permitidas
+       
+    4. Reimpresión
+       - Visualización de historial
+       - Proceso de reimpresión
+       - Búsqueda de facturas
+
+Características de la interfaz:
+    - Diseño responsivo
+    - Temas claro/oscuro
+    - Scroll automático
+    - Organización por tarjetas
+    - Títulos destacados
+"""
+
 import flet as ft
 from flet import *
 

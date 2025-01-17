@@ -1,3 +1,44 @@
+"""
+Módulo de Gestión de Clientes
+----------------------------
+Implementa el manejo completo de clientes utilizando el patrón Singleton y Observer.
+
+Clase Customer:
+    Singleton que gestiona las operaciones de clientes.
+    
+    Características:
+    - Patrón Singleton para instancia única
+    - Sistema de observadores para actualizaciones
+    - Operaciones CRUD completas
+    
+    Métodos principales:
+    - add_observer(): Registra observadores
+    - notify_observers(): Notifica cambios
+    - get_all_customers(): Lista todos los clientes
+    - add_customer(): Agrega nuevo cliente
+    - update_customer(): Actualiza cliente
+    - delete_customer(): Elimina cliente
+
+Función create_customers_view:
+    Crea la interfaz de usuario para gestión de clientes.
+    
+    Características:
+    - Tabla de clientes
+    - Formularios de edición
+    - Validaciones en tiempo real
+    - Mensajes de estado
+    - Actualización automática
+    
+Campos del cliente:
+    - Nombre
+    - Correo
+    - Teléfono
+    - Dirección
+    - Comuna
+    - Ciudad
+    - RFC
+"""
+
 import flet as ft
 from flet import *
 from db_config import DatabaseConnection

@@ -1,3 +1,30 @@
+"""
+Módulo de Visualización de Facturas
+----------------------------------
+Permite ver y reimprimir facturas existentes.
+
+Función create_billing_visualization_view:
+    Crea la interfaz para visualizar facturas.
+    
+    Características:
+    - Lista de facturas emitidas
+    - Búsqueda por número
+    - Reimpresión de facturas
+    - Visualización de detalles
+    
+Funcionalidades principales:
+    - Carga de historial
+    - Reimpresión en PDF
+    - Búsqueda de facturas
+    - Detalles de transacciones
+    - Validación de datos
+    
+Sistema de archivos:
+    - Gestión de carpeta 'facturas'
+    - Generación de PDFs
+    - Nomenclatura automática
+"""
+
 import flet as ft
 from flet import *
 from billing import BillingManager
