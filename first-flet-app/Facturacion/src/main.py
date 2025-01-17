@@ -6,6 +6,7 @@ import billing
 import billing_visualitation
 import customers
 import products
+import help
 
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
@@ -476,7 +477,7 @@ def create_recovery_view(page: Page, on_recovery_success):
     )
 
 def main(page: ft.Page):
-    page.clean()  # Limpiar la página al iniciar
+    page.clean()
 
     def show_main_app():
         page.controls.clear()
@@ -486,8 +487,9 @@ def main(page: ft.Page):
         customers_view = customers.create_customers_view(page)
         billing_view = billing.create_billing_view(page)
         billing_visualization_view = billing_visualitation.create_billing_visualization_view(page)
+        help_view = help.create_help_view(page)  # Add help view
 
-        views = [products_view, customers_view, billing_view, billing_visualization_view]
+        views = [products_view, customers_view, billing_view, billing_visualization_view, help_view]  # Add help view to list
         current_view = views[0]
 
         def handle_logout(e):
@@ -498,7 +500,7 @@ def main(page: ft.Page):
         def change_nav(e):
             nonlocal current_view
             index = e.control.selected_index
-            if index == 4:  # Si se selecciona cerrar sesión
+            if index == 5:  # Si se selecciona cerrar sesión
                 page.controls.clear()
                 page.add(create_login_view(page, show_main_app))
                 return
@@ -547,6 +549,11 @@ def main(page: ft.Page):
                     icon=Icons.DESCRIPTION,
                     selected_icon=Icons.DESCRIPTION,
                     label="Reimpresión \n de facturas",
+                ),
+                NavigationRailDestination(
+                    icon=Icons.HELP_OUTLINE,  # Add help icon
+                    selected_icon=Icons.HELP,
+                    label="Ayuda",
                 ),
                 NavigationRailDestination(
                     icon=Icons.LOGOUT,
